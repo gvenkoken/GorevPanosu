@@ -1,12 +1,9 @@
-// The API base: the same origin on the web build (served under /mobile/ next to /api), or EXPO_PUBLIC_API_URL on a device.
-const base = (process.env.EXPO_PUBLIC_API_URL ?? "").replace(/\/$/, "");
+import { request } from './transport';
+export { ApiError } from './transport';
+export type { Fetch } from './transport';
 
-export class ApiError extends Error {
-  constructor(public readonly status: number, message: string) { super(message); }
-}
-
-export async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${base}${path}`, { ...init, headers: { "Content-Type": "application/json", ...init?.headers } });
-  if (!response.ok) throw new ApiError(response.status, `${response.status} ${response.statusText}`);
-  return (response.status === 204 ? undefined : await response.json()) as T;
+// Kept narrowly scoped for the existing scaffold's readiness screen.
+export function api<T>(path: '/health/ready'): Promise<T> {
+  if (path !== '/health/ready') throw new Error('Unsupported readiness endpoint');
+  return request<T>(path);
 }
