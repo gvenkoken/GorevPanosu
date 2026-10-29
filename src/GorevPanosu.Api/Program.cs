@@ -1,11 +1,12 @@
 using GorevPanosu.Api.Data;
-using GorevPanosu.Api.Infrastructure;
+using GorevPanosu.Api.Endpoints;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Errors are RFC 7807 problem details everywhere (exceptions, status codes, validation).
+builder.Services.AddEndpointModuleAssembly(typeof(Program).Assembly);
 builder.Services.AddProblemDetails();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -53,7 +54,7 @@ app.MapHealthChecks("/health", new HealthCheckOptions { Predicate = _ => false }
 app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") });
 
 // Every feature registers its own endpoints (see IEndpointModule); generated slices need no edit here.
-app.MapEndpointModules(typeof(Program).Assembly);
+app.MapRegisteredEndpointModules();
 
 app.Run();
 
