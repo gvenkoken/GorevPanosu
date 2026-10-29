@@ -1,3 +1,4 @@
+import { MemoryRouter } from 'react-router-dom'
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { createAdminApi } from '../../api/admin'
@@ -26,7 +27,7 @@ function fixture(items: Task[] = [task]) {
 afterEach(() => { cleanup(); vi.useRealTimers() })
 
 it('shows the columns, assignee, overdue label and form links', async () => {
-  render(<TasksScreen api={fixture([task, { ...task, id: 't2', title: 'İkinci görev', assigneeId: 'p1', status: 'Completed' }])} now={now} />)
+  render(<MemoryRouter><TasksScreen api={fixture([task, { ...task, id: 't2', title: 'İkinci görev', assigneeId: 'p1', status: 'Completed' }])} now={now} /></MemoryRouter>)
   await screen.findByRole('table')
   for (const name of ['Başlık', 'Atanan kişi', 'Son tarih', 'Durum']) {
     expect(screen.getByRole('columnheader', { name })).toBeTruthy()
@@ -38,8 +39,8 @@ it('shows the columns, assignee, overdue label and form links', async () => {
   expect(within(row).getByText('Açık')).toBeTruthy()
   expect(screen.getByText('Ada', { selector: 'span' })).toBeTruthy()
   expect(screen.getAllByText('Gecikmiş')).toHaveLength(1)
-  expect(screen.getByRole('link', { name: 'Yeni görev' }).getAttribute('href')).toBe('#/tasks/new')
-  expect(within(row).getByRole('link', { name: 'Düzenle' }).getAttribute('href')).toBe('#/tasks/t1/edit')
+  expect(screen.getByRole('link', { name: 'Yeni görev' }).getAttribute('href')).toBe('/tasks/new')
+  expect(within(row).getByRole('link', { name: 'Düzenle' }).getAttribute('href')).toBe('/tasks/t1/edit')
   expect(screen.getByText(/Son yenileme:/).querySelector('time')?.dateTime).toBe(now().toISOString())
 })
 
@@ -47,7 +48,7 @@ it('shows loading until the injected request resolves, then an empty state', asy
   const api = fixture()
   let resolve!: (items: Task[]) => void
   api.tasks.list = vi.fn(() => new Promise<Task[]>(done => { resolve = done }))
-  render(<TasksScreen api={api} now={now} />)
+  render(<MemoryRouter><TasksScreen api={api} now={now} /></MemoryRouter>)
   expect(screen.getByText('Görevler yükleniyor…')).toBeTruthy()
   expect(screen.queryByRole('table')).toBeNull()
   await act(async () => { resolve([]) })
@@ -57,7 +58,7 @@ it('shows loading until the injected request resolves, then an empty state', asy
 it('retries a failed request through the injected API', async () => {
   const api = fixture()
   vi.mocked(api.tasks.list).mockRejectedValueOnce(new Error('Liste alınamadı'))
-  render(<TasksScreen api={api} now={now} />)
+  render(<MemoryRouter><TasksScreen api={api} now={now} /></MemoryRouter>)
   expect(await screen.findByRole('alert')).toBeTruthy()
   fireEvent.click(screen.getByRole('button', { name: 'Tekrar dene' }))
   await screen.findByRole('table')
@@ -68,7 +69,7 @@ it('retries a failed request through the injected API', async () => {
 it('does not poll during 60 seconds and refreshes only when requested', async () => {
   vi.useFakeTimers()
   const api = fixture()
-  render(<TasksScreen api={api} now={now} />)
+  render(<MemoryRouter><TasksScreen api={api} now={now} /></MemoryRouter>)
   await act(async () => {})
   await act(async () => { vi.advanceTimersByTime(60_000) })
   expect(api.tasks.list).toHaveBeenCalledTimes(1)
@@ -79,7 +80,7 @@ it('does not poll during 60 seconds and refreshes only when requested', async ()
 
 it('assigns, reassigns, unassigns, completes and reopens using the row actions', async () => {
   const api = fixture()
-  render(<TasksScreen api={api} now={now} />)
+  render(<MemoryRouter><TasksScreen api={api} now={now} /></MemoryRouter>)
   const select = await screen.findByRole('combobox', { name: 'Rapor hazırla için atama' })
   expect(within(select).queryByRole('option', { name: 'Pasif kişi' })).toBeNull()
   for (const id of ['p1', 'p2', '']) {
@@ -97,7 +98,7 @@ it('assigns, reassigns, unassigns, completes and reopens using the row actions',
 
 it('deletes only after inline confirmation, and restores focus on cancellation', async () => {
   const api = fixture()
-  render(<TasksScreen api={api} now={now} />)
+  render(<MemoryRouter><TasksScreen api={api} now={now} /></MemoryRouter>)
   const trigger = await screen.findByRole('button', { name: 'Sil' })
   fireEvent.click(trigger)
   expect(screen.getByRole('alertdialog')).toBeTruthy()
@@ -115,7 +116,7 @@ it('deletes only after inline confirmation, and restores focus on cancellation',
 it('keeps the row and confirmation available when deletion fails', async () => {
   const api = fixture()
   vi.mocked(api.tasks.remove).mockRejectedValueOnce(new Error('Silinemedi'))
-  render(<TasksScreen api={api} now={now} />)
+  render(<MemoryRouter><TasksScreen api={api} now={now} /></MemoryRouter>)
   fireEvent.click(await screen.findByRole('button', { name: 'Sil' }))
   await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Silmeyi onayla' })) })
   expect(screen.getByRole('alert').textContent).toBe('Silinemedi')

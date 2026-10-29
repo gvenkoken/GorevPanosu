@@ -1,3 +1,4 @@
+import { MemoryRouter } from 'react-router-dom'
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { createAdminApi } from '../../api/admin'
@@ -26,7 +27,7 @@ function setup(options: { people?: Person[]; warning?: boolean; failSave?: boole
     if (options.failSave) return response({ errors: { fullName: ['Bu ad kullanılamaz.'] } }, 400)
     return response({ id: init?.method === 'POST' ? 'new' : 'inactive', ...body })
   })
-  render(<PeopleScreen api={createAdminApi(request)} />)
+  render(<MemoryRouter><PeopleScreen api={createAdminApi(request)} /></MemoryRouter>)
   return request
 }
 function writes(request: ReturnType<typeof setup>) {
@@ -95,7 +96,7 @@ it('confirms deactivation, displays Pasif and links to tasks for reassignment', 
   expect(writes(request)[1][0]).toBe('/api/admin/people/active/deactivate')
   expect(writes(request)[1][1]?.method).toBe('POST')
   expect(JSON.parse(String(writes(request)[1][1]?.body))).toEqual({ confirm: true })
-  expect(screen.getByRole('link', { name: /Görevler ekranına dön/ }).getAttribute('href')).toBe('#/tasks')
+  expect(screen.getByRole('link', { name: /Görevler ekranına dön/ }).getAttribute('href')).toBe('/tasks')
 })
 
 it('deactivates directly when the API does not require confirmation', async () => {
@@ -155,7 +156,7 @@ it('shows loading and prevents duplicate writes while an injected request is pen
     if (init?.method === 'GET') finishList = resolve
     else finishWrite = resolve
   }))
-  render(<PeopleScreen api={createAdminApi(request)} />)
+  render(<MemoryRouter><PeopleScreen api={createAdminApi(request)} /></MemoryRouter>)
   expect(screen.getByText('Kişiler yükleniyor…')).toBeTruthy()
   expect((screen.getByRole('button', { name: 'Yenile' }) as HTMLButtonElement).disabled).toBe(true)
   await act(async () => { finishList(response([active])) })
