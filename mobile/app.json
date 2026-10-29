@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "GorevPanosu",
+    "slug": "gorevpanosu",
+    "scheme": "gorevpanosu",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "ios": { "supportsTablet": true, "bundleIdentifier": "com.ideafactra.gorevpanosu" },
+    "android": { "package": "com.ideafactra.gorevpanosu" },
+    "web": { "output": "single", "bundler": "metro" },
+    "experiments": { "baseUrl": "/mobile" },
+    "plugins": [ "expo-router" ]
+  }
+}

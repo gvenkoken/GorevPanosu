@@ -1,0 +1,36 @@
+# The whole app: PostgreSQL, the API, the React web client at / and the web build of the Expo app at /mobile/ (nginx,
+# which also proxies /api and /health to the API).
+# Only the web port is published, and only on 127.0.0.1. POSTGRES_PASSWORD (required) and APP_PORT (optional, default
+# 8080) come from the environment or a local .env file (see .env.example). The database and the API publish no ports.
+services:
+  postgres:
+    image: postgres:16
+    environment: [ "POSTGRES_DB=gorevpanosu", "POSTGRES_USER=gorevpanosu", "POSTGRES_PASSWORD" ]
+    volumes: [ "postgres-data:/var/lib/postgresql/data" ]
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U gorevpanosu -d gorevpanosu" ]
+      interval: 5s
+      retries: 10
+  api:
+    build: { context: ., dockerfile: Dockerfile }
+    # The connection is assembled from its parts (see Data/DataRegistration.cs); pending migrations run at startup.
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - Database__Host=postgres
+      - Database__Name=gorevpanosu
+      - Database__User=gorevpanosu
+      - POSTGRES_PASSWORD
+      - Database__MigrateOnStartup=true
+    expose: [ "8080" ]
+    depends_on:
+      postgres: { condition: service_healthy }
+  web:
+    build: { context: ., dockerfile: web/Dockerfile }
+    ports: [ "127.0.0.1:${APP_PORT:-8080}:8080" ]
+    depends_on: [ api ]
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/" ]
+      interval: 5s
+      retries: 10
+volumes:
+  postgres-data:
