@@ -96,6 +96,41 @@ it('assigns, reassigns, unassigns, completes and reopens using the row actions',
   expect(screen.getByText('Açık')).toBeTruthy()
 })
 
+it.each([
+  { initialAssigneeId: null, value: 'p1', assigneeId: 'p1', label: 'Ada' },
+  { initialAssigneeId: 'p1', value: '', assigneeId: null, label: 'Atanmamış' },
+])('saves row assignment as $label through PUT without an alert', async ({ initialAssigneeId, value, assigneeId, label }) => {
+  const request = vi.fn(async (path: RequestInfo | URL, init?: RequestInit) => {
+    if (path === '/api/admin/tasks' && init?.method === 'GET') {
+      return new Response(JSON.stringify([{ ...task, assigneeId: initialAssigneeId }]))
+    }
+    if (path === '/api/admin/people' && init?.method === 'GET') {
+      return new Response(JSON.stringify([{ id: 'p1', fullName: 'Ada', isActive: true }]))
+    }
+    if (path === '/api/admin/tasks/t1/assign') {
+      if (init?.method !== 'PUT') {
+        return new Response(JSON.stringify({ title: 'Method Not Allowed' }), { status: 405 })
+      }
+      const body = JSON.parse(init.body as string) as { assigneeId: string | null }
+      return new Response(JSON.stringify({ ...task, assigneeId: body.assigneeId }))
+    }
+    throw new Error(`Unexpected request: ${init?.method} ${path}`)
+  })
+  render(<MemoryRouter><TasksScreen api={createAdminApi(request)} now={now} /></MemoryRouter>)
+  const select = await screen.findByRole('combobox', { name: 'Rapor hazırla için atama' })
+  await act(async () => { fireEvent.change(select, { target: { value } }) })
+
+  const assignments = request.mock.calls.filter(([path]) => path === '/api/admin/tasks/t1/assign')
+  expect(assignments).toHaveLength(1)
+  expect(assignments[0][1]?.method).toBe('PUT')
+  expect(JSON.parse(assignments[0][1]?.body as string)).toEqual({ assigneeId })
+  expect((select as HTMLSelectElement).value).toBe(value)
+  const row = screen.getByRole('row', { name: /Rapor hazırla/ })
+  expect(within(row).getByText(label, { selector: 'span' })).toBeTruthy()
+  expect(screen.queryByRole('alert')).toBeNull()
+  expect(screen.queryByText('Method Not Allowed')).toBeNull()
+})
+
 it('deletes only after inline confirmation, and restores focus on cancellation', async () => {
   const api = fixture()
   render(<MemoryRouter><TasksScreen api={api} now={now} /></MemoryRouter>)

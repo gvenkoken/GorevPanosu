@@ -30,7 +30,7 @@ export function createAdminApi(request: Fetch = fetch) {
       complete: (id: string) => call<Task>(`${item('tasks', id)}/complete`, 'POST'),
       reopen: (id: string) => call<Task>(`${item('tasks', id)}/reopen`, 'POST'),
       assign: (id: string, assigneeId: string | null) =>
-        call<Task>(`${item('tasks', id)}/assign`, 'POST', { assigneeId }),
+        call<Task>(`${item('tasks', id)}/assign`, 'PUT', { assigneeId }),
     },
     people: {
       list: () => call<Person[]>('/api/admin/people'),
