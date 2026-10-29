@@ -6,11 +6,13 @@ import { selectedPerson } from '../../storage/person';
 import { theme } from '../../theme';
 
 export interface Dependencies {
+  clearPerson?: typeof selectedPerson.clear;
   readPerson: () => Promise<string | null>;
   api: (personId: string) => Pick<ReturnType<typeof createMobileApi>, 'detail' | 'complete' | 'reopen'>;
 }
 const defaults: Dependencies = {
   readPerson: selectedPerson.read,
+  clearPerson: selectedPerson.clear,
   api: personId => createMobileApi(undefined, async () => personId),
 };
 export function localDate(value: string): string {
@@ -19,7 +21,9 @@ export function localDate(value: string): string {
   return dateOnly ? date.toLocaleDateString('tr-TR') : date.toLocaleString('tr-TR');
 }
 
-export function TaskDetailScreen({ id, dependencies = defaults }: { id: string; dependencies?: Dependencies }) {
+export function TaskDetailScreen({ id, onSelectPerson, dependencies = defaults }: {
+  id: string; onSelectPerson?: () => void; dependencies?: Dependencies;
+}) {
   const [task, setTask] = useState<Task>();
   const [personId, setPersonId] = useState<string>();
   const [loading, setLoading] = useState(true);
@@ -44,13 +48,26 @@ export function TaskDetailScreen({ id, dependencies = defaults }: { id: string; 
         setPersonId(person); setTask(result);
       } catch (failure) {
         if (current !== revision.current) return;
-        if (failure instanceof ApiError && failure.status === 404) setMissing(true);
+        if (failure instanceof ApiError && failure.status === 404) await reselectPerson(current);
         else setError('Görev yüklenemedi. Lütfen tekrar deneyin.');
       } finally { if (current === revision.current) setLoading(false); }
     }
     void load();
     return () => { revision.current++; };
-  }, [id, dependencies, attempt]);
+  }, [id, dependencies, onSelectPerson, attempt]);
+
+  async function reselectPerson(current: number) {
+    if (!onSelectPerson || !dependencies.clearPerson) {
+      setMissing(true);
+      return;
+    }
+    try {
+      await dependencies.clearPerson();
+      if (current === revision.current) onSelectPerson();
+    } catch {
+      if (current === revision.current) setError('Kişi seçimi temizlenemedi. Lütfen tekrar deneyin.');
+    }
+  }
 
   async function changeStatus() {
     if (!task || !personId || inFlight.current) return;
@@ -64,7 +81,7 @@ export function TaskDetailScreen({ id, dependencies = defaults }: { id: string; 
       setNotice(result.status === 'Completed' ? 'Görev tamamlandı.' : 'Görev yeniden açıldı.');
     } catch (failure) {
       if (current !== revision.current) return;
-      if (failure instanceof ApiError && failure.status === 404) setMissing(true);
+      if (failure instanceof ApiError && failure.status === 404) await reselectPerson(current);
       else setError('İşlem başarısız. Lütfen tekrar deneyin.');
     } finally {
       if (current === revision.current) { inFlight.current = false; setBusy(false); }
