@@ -68,7 +68,7 @@ it.each(['detail', 'complete', 'reopen'] as const)('shows inaccessible state on 
     await fireEvent.press(screen.getByRole('button'));
   }
   expect(await screen.findByText('Görev artık erişilemiyor.')).toBeOnTheScreen();
-  expect(screen.queryByRole('button')).toBeNull();
+  expect(screen.getByRole('button', { name: 'Tekrar dene' })).toBeOnTheScreen();
   expect(screen.queryByText(open.title)).toBeNull();
 });
 

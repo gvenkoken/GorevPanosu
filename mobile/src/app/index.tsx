@@ -1,24 +1,27 @@
-import { useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
-import { api } from "../api/client";
-
-type Health = "checking" | "ready" | "unreachable";
+import { useEffect, useState } from 'react';
+import { Redirect } from 'expo-router';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { selectedPerson } from '../storage/person';
 
 export default function Home() {
-  const [health, setHealth] = useState<Health>("checking");
+  const [destination, setDestination] = useState<'/select-person' | '/tasks' | null>(null);
+  const [error, setError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     let live = true;
-    api<unknown>("/health/ready").then(() => live && setHealth("ready")).catch(() => live && setHealth("unreachable"));
+    setError(false);
+    selectedPerson.read().then(person => {
+      if (live) setDestination(person?.trim() ? '/tasks' : '/select-person');
+    }).catch(() => { if (live) setError(true); });
     return () => { live = false; };
-  }, []);
-  return <View style={styles.page}>
-    <Text accessibilityRole="header" style={styles.title}>GorevPanosu</Text>
-    {health === "checking" ? <ActivityIndicator accessibilityLabel="Checking the API" />
-      : <Text testID="api-status">{health === "ready" ? "API is ready." : "The API cannot be reached."}</Text>}
+  }, [attempt]);
+  if (destination) return <Redirect href={destination} />;
+  return <View style={{ padding: 24, gap: 16 }}>
+    {error ? <>
+      <Text accessibilityRole="alert">Kayıtlı kişi okunamadı.</Text>
+      <Pressable accessibilityRole="button" onPress={() => setAttempt(value => value + 1)}>
+        <Text>Tekrar dene</Text>
+      </Pressable>
+    </> : <ActivityIndicator accessibilityLabel="Kayıtlı kişi okunuyor" />}
   </View>;
 }
-
-const styles = StyleSheet.create({
-  page: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24 },
-  title: { fontSize: 28, fontWeight: "700" },
-});

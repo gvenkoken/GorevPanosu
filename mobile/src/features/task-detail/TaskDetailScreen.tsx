@@ -74,7 +74,12 @@ export function TaskDetailScreen({ id, dependencies = defaults }: { id: string; 
   return <ScrollView style={styles.scroll} contentContainerStyle={styles.page}>
     <Text accessibilityRole="header" style={theme.typography.title}>Görev ayrıntısı</Text>
     {loading ? <ActivityIndicator accessibilityLabel="Görev yükleniyor" /> : missing ?
-      <Text accessibilityRole="alert">Görev artık erişilemiyor.</Text> : <>
+      <>
+        <Text accessibilityRole="alert">Görev artık erişilemiyor.</Text>
+        <Pressable accessibilityRole="button" style={styles.button} onPress={() => setAttempt(value => value + 1)}>
+          <Text style={styles.buttonText}>Tekrar dene</Text>
+        </Pressable>
+      </> : <>
       {!!error && <Text accessibilityRole="alert">{error}</Text>}
       {!task ? <Pressable accessibilityRole="button" style={styles.button} onPress={() => setAttempt(value => value + 1)}>
         <Text style={styles.buttonText}>Tekrar dene</Text>
@@ -88,7 +93,7 @@ export function TaskDetailScreen({ id, dependencies = defaults }: { id: string; 
         {!!notice && <Text accessibilityRole="alert">{notice}</Text>}
         <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy }} disabled={busy}
           style={[styles.button, busy && styles.disabled]} onPress={() => { void changeStatus(); }}>
-          <Text style={styles.buttonText}>{busy ? 'İşlem sürüyor…' : task.status === 'Open' ? 'Tamamlandı olarak işaretle' : 'Yeniden aç'}</Text>
+          <Text style={styles.buttonText}>{busy ? 'İşlem sürüyor…' : error ? 'Tekrar dene' : task.status === 'Open' ? 'Tamamlandı olarak işaretle' : 'Yeniden aç'}</Text>
         </Pressable>
       </>}
     </>}
