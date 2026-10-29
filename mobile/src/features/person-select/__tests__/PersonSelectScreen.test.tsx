@@ -115,3 +115,15 @@ it('keeps the screen open if saving fails', async () => {
   expect(await screen.findByText('Kişi seçimi kaydedilemedi. Lütfen tekrar deneyin.')).toBeOnTheScreen();
   expect(props.onSelected).not.toHaveBeenCalled();
 });
+
+it.each([true, false])('shows the reselection explanation with empty people only when requested (%s)', async reselect => {
+  const props = setup();
+  jest.mocked(props.dependencies.people).mockResolvedValue([]);
+  await render(<PersonSelectScreen {...props} reselect={reselect} />);
+  expect(await screen.findByText('Aktif kişi bulunamadı.')).toBeOnTheScreen();
+  if (reselect) {
+    expect(screen.getByText(/Hatırlanan kişi artık aktif değil/)).toBeOnTheScreen();
+  } else {
+    expect(screen.queryByText(/Hatırlanan kişi artık aktif değil/)).toBeNull();
+  }
+});

@@ -4,7 +4,9 @@ import { TasksScreen } from '../../features/tasks/TasksScreen';
 
 export default function Tasks() {
   const router = useRouter();
-  const selectPerson = useCallback(() => router.replace('/select-person'), [router]);
+  const selectPerson = useCallback((reselect = false) => router.replace(reselect
+    ? { pathname: '/select-person', params: { reselect: 'true' } }
+    : '/select-person'), [router]);
   return <TasksScreen onSelectPerson={selectPerson}
     onTask={id => router.push({ pathname: '/tasks/[id]', params: { id } })} />;
 }

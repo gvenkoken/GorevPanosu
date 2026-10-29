@@ -16,8 +16,9 @@ const defaults: Dependencies = {
   storage: selectedPerson,
 };
 
-export function PersonSelectScreen({ onSelected, dependencies = defaults }: {
+export function PersonSelectScreen({ onSelected, reselect = false, dependencies = defaults }: {
   onSelected: () => void;
+  reselect?: boolean;
   dependencies?: Dependencies;
 }) {
   const [people, setPeople] = useState<Person[]>([]);
@@ -86,7 +87,7 @@ export function PersonSelectScreen({ onSelected, dependencies = defaults }: {
   return <ScrollView contentContainerStyle={styles.page}>
     <Text accessibilityRole="header" style={theme.typography.title}>Kişi seçimi</Text>
     <Text style={styles.description}>Görevlerini görmek istediğiniz kişiyi seçin.</Text>
-    {explanation && <Text accessibilityRole="alert">Hatırlanan kişi artık aktif değil veya bulunamadı. Lütfen yeniden bir kişi seçin.</Text>}
+    {(reselect || explanation) && <Text accessibilityRole="alert">Hatırlanan kişi artık aktif değil veya bulunamadı. Lütfen yeniden bir kişi seçin.</Text>}
     {loading ? <ActivityIndicator accessibilityLabel="Kişiler yükleniyor" /> : <>
       {error && <View><Text accessibilityRole="alert">{error}</Text>
         <Pressable accessibilityRole="button" style={styles.retry} disabled={saving}

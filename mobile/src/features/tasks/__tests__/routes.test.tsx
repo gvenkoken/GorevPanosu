@@ -7,7 +7,7 @@ import Layout from '../../../app/_layout';
 import SelectPerson from '../../../app/select-person';
 import Tasks from '../../../app/tasks/index';
 import TaskDetail from '../../../app/tasks/[id]';
-import { mobileApi } from '../../../api/mobile';
+import { createMobileApi, mobileApi } from '../../../api/mobile';
 import { ApiError } from '../../../api/transport';
 import { assignedTasks } from '../api';
 
@@ -17,6 +17,7 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
 jest.mock('../../../api/mobile', () => ({
   ...jest.requireActual('../../../api/mobile'),
   mobileApi: { people: jest.fn() },
+  createMobileApi: jest.fn(),
 }));
 jest.mock('../api', () => ({ assignedTasks: jest.fn() }));
 
@@ -48,6 +49,7 @@ it('opens selection with empty storage, saves an active person and opens tasks',
   await screen.findByRole('radio', { name: 'Ada' });
   expect(screen).toHavePathname('/select-person');
   expect(screen.queryByText('Pasif kişi')).toBeNull();
+  expect(screen.queryByText(/Hatırlanan kişi artık aktif değil/)).toBeNull();
   expect(screen.queryByText(/API is ready|The API cannot be reached/)).toBeNull();
   jest.mocked(AsyncStorage.setItem).mockImplementation(async () => {
     jest.mocked(AsyncStorage.getItem).mockResolvedValue('p1');
@@ -81,7 +83,9 @@ it('clears an inactive person on tasks 404 and opens selection', async () => {
   await renderRouter(routes, { initialUrl: '/' });
   await screen.findByRole('radio', { name: 'Ada' });
   expect(screen).toHavePathname('/select-person');
-  expect(AsyncStorage.removeItem).toHaveBeenCalled();
+  expect(AsyncStorage.removeItem).toHaveBeenCalledWith('gorevpanosu.selectedPersonId');
+  expect(screen.getByText(/Hatırlanan kişi artık aktif değil/)).toBeOnTheScreen();
+  expect(screen.queryByText('Aktif kişi bulunamadı.')).toBeNull();
 });
 
 it('retries a storage failure with Turkish feedback', async () => {
@@ -91,4 +95,43 @@ it('retries a storage failure with Turkish feedback', async () => {
   await fireEvent.press(screen.getByRole('button', { name: 'Tekrar dene' }));
   await waitFor(() => expect(screen).toHavePathname('/select-person'));
   expect(AsyncStorage.getItem).toHaveBeenCalledTimes(3);
+});
+
+it.each(['detail', 'complete', 'reopen'] as const)('explains reselection after detail %s returns 404', async operation => {
+  jest.mocked(AsyncStorage.getItem).mockResolvedValue('p1');
+  jest.mocked(AsyncStorage.removeItem).mockImplementation(async () => {
+    jest.mocked(AsyncStorage.getItem).mockResolvedValue(null);
+  });
+  const api = {
+    detail: jest.fn().mockResolvedValue({ ...task, status: operation === 'reopen' ? 'Completed' : 'Open' }),
+    complete: jest.fn(),
+    reopen: jest.fn(),
+  };
+  api[operation].mockRejectedValueOnce(new ApiError(404, 'Not found'));
+  jest.mocked(createMobileApi).mockReturnValue(api as unknown as ReturnType<typeof createMobileApi>);
+  await renderRouter(routes, { initialUrl: '/tasks/t1' });
+  if (operation !== 'detail') {
+    await fireEvent.press(await screen.findByRole('button', {
+      name: operation === 'reopen' ? 'Yeniden aç' : 'Tamamlandı olarak işaretle',
+    }));
+  }
+  await screen.findByRole('radio', { name: 'Ada' });
+  expect(screen).toHavePathname('/select-person');
+  expect(AsyncStorage.removeItem).toHaveBeenCalledWith('gorevpanosu.selectedPersonId');
+  expect(screen.getByText(/Hatırlanan kişi artık aktif değil/)).toBeOnTheScreen();
+  expect(screen.queryByText('Aktif kişi bulunamadı.')).toBeNull();
+});
+
+it('does not explain reselection when the user changes person voluntarily', async () => {
+  jest.mocked(AsyncStorage.getItem).mockResolvedValue('p1');
+  jest.mocked(createMobileApi).mockReturnValue({
+    tasks: jest.fn().mockResolvedValue([]),
+  } as unknown as ReturnType<typeof createMobileApi>);
+  await renderRouter(routes, { initialUrl: '/tasks' });
+  await screen.findByText(task.title);
+  await fireEvent.press(screen.getByRole('button', { name: 'Kişi değiştir' }));
+  await screen.findByRole('radio', { name: 'Ada' });
+  expect(screen).toHavePathname('/select-person');
+  expect(screen.queryByText(/Hatırlanan kişi artık aktif değil/)).toBeNull();
+  expect(AsyncStorage.removeItem).not.toHaveBeenCalled();
 });

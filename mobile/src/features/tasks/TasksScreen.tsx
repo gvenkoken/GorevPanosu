@@ -23,7 +23,7 @@ const defaults: Dependencies = {
 };
 
 export function TasksScreen({ onSelectPerson, onTask, dependencies = defaults }: {
-  onSelectPerson: () => void; onTask: (id: string) => void; dependencies?: Dependencies;
+  onSelectPerson: (reselect?: boolean) => void; onTask: (id: string) => void; dependencies?: Dependencies;
 }) {
   const [name, setName] = useState('');
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -53,7 +53,7 @@ export function TasksScreen({ onSelectPerson, onTask, dependencies = defaults }:
         if (failure instanceof ApiError && failure.status === 404) {
           try {
             await dependencies.clearPerson();
-            if (current()) onSelectPerson();
+            if (current()) onSelectPerson(true);
           } catch { if (current()) setError(true); }
         } else setError(true);
       } finally { if (current()) setLoading(false); }
@@ -87,7 +87,7 @@ export function TasksScreen({ onSelectPerson, onTask, dependencies = defaults }:
     ListHeaderComponent={<View style={styles.section}>
     <Text accessibilityRole="header" style={theme.typography.title}>Görevlerim</Text>
     {!!name && <Text style={theme.typography.heading}>{name}</Text>}
-    <Pressable accessibilityRole="button" style={styles.button} onPress={onSelectPerson}><Text>Kişi değiştir</Text></Pressable>
+    <Pressable accessibilityRole="button" style={styles.button} onPress={() => onSelectPerson()}><Text>Kişi değiştir</Text></Pressable>
     {loading ? <ActivityIndicator accessibilityLabel="Görevler yükleniyor" /> : error ? <View>
       <Text accessibilityRole="alert">Görevler yüklenemedi. Lütfen tekrar deneyin.</Text>
       <Pressable accessibilityRole="button" style={styles.button} onPress={() => setAttempt(value => value + 1)}><Text>Tekrar dene</Text></Pressable>
