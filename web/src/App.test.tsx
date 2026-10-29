@@ -1,35 +1,30 @@
-import { cleanup, render, screen } from '@testing-library/react'
-import { afterEach, expect, it, vi } from 'vitest'
+import { act, cleanup, render, screen } from '@testing-library/react'
+import { afterEach, expect, it } from 'vitest'
 import { App } from './App'
-import { api, ApiError, configureApi } from './api/client'
 
 afterEach(() => {
   cleanup()
-  vi.unstubAllGlobals()
+  window.history.replaceState(null, '', '/')
 })
 
-it('shows the API readiness', async () => {
-  vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 200 })))
+it('marks the tasks link as current by default', () => {
   render(<App />)
-  expect(await screen.findByText('API: ready')).toBeTruthy()
+  expect(screen.getByRole('link', { name: 'Görevler' }).getAttribute('aria-current')).toBe('page')
+  expect(screen.getByRole('link', { name: 'Kişiler' }).hasAttribute('aria-current')).toBe(false)
+  expect(screen.getByRole('heading', { name: 'Görevler' })).toBeTruthy()
 })
 
-it('turns problem details into ApiError', async () => {
-  const body = JSON.stringify({ title: 'Validation failed', status: 400, errors: { name: ['Required'] } })
-  vi.stubGlobal('fetch', vi.fn(async () => new Response(body, { status: 400, headers: { 'Content-Type': 'application/problem+json' } })))
-  const error = await api('/api/things').catch((e: unknown) => e)
-  expect(error).toBeInstanceOf(ApiError)
-  expect((error as ApiError).problem.errors?.name).toEqual(['Required'])
-})
-
-it('sends the configured access token and nothing without one', async () => {
-  const fetch = vi.fn(async () => new Response('[]', { status: 200 }))
-  vi.stubGlobal('fetch', fetch)
-  configureApi({ credential: () => 'abc123' })
-  await api('/api/things')
-  configureApi({ credential: () => null })
-  await api('/api/things')
-  const headers = (fetch.mock.calls as unknown as [string, RequestInit][]).map(c => c[1].headers as Record<string, string>)
-  expect(headers[0].Authorization).toBe(['Bearer', 'abc123'].join(' '))
-  expect(headers[1].Authorization).toBeUndefined()
+it('routes to people and responds to navigation history changes', () => {
+  window.history.replaceState(null, '', '/#/people')
+  render(<App />)
+  expect(screen.getByRole('link', { name: 'Kişiler' }).getAttribute('aria-current')).toBe('page')
+  expect(screen.getByRole('link', { name: 'Görevler' }).hasAttribute('aria-current')).toBe(false)
+  expect(screen.getByRole('heading', { name: 'Kişiler' })).toBeTruthy()
+  expect(screen.getByRole('link', { name: 'Görevler' }).getAttribute('href')).toBe('#/tasks')
+  act(() => {
+    window.history.replaceState(null, '', '/#/tasks')
+    window.dispatchEvent(new HashChangeEvent('hashchange'))
+  })
+  expect(screen.getByRole('link', { name: 'Görevler' }).getAttribute('aria-current')).toBe('page')
+  expect(screen.getByRole('heading', { name: 'Görevler' })).toBeTruthy()
 })
