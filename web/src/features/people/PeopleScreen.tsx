@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import { createAdminApi } from '../../api/admin'
 import type { Person } from '../../api/admin'
@@ -110,7 +111,7 @@ export function PeopleScreen({ api = defaultApi }: { api?: PeopleApi }) {
     {loading && <Notice>Kişiler yükleniyor…</Notice>}
     {loadError && <Notice variant="error">{loadError} <ActionButton onClick={() => void load()}>Tekrar dene</ActionButton></Notice>}
     {error && <Notice variant="error">{error}</Notice>}
-    {success && <Notice variant="success">{success} <a href="#/tasks">Yeniden atamak için Görevler ekranına dön</a></Notice>}
+    {success && <Notice variant="success">{success} <Link to="/tasks">Yeniden atamak için Görevler ekranına dön</Link></Notice>}
     <form aria-label={editing ? 'Kişi adını düzelt' : 'Kişi ekle'} onSubmit={event => { event.preventDefault(); void save() }}>
       <h3>{editing ? 'Kişi adını düzelt' : 'Kişi ekle'}</h3>
       <FormField label="Ad soyad" value={fullName} error={nameError} disabled={blocked} onChange={event => setFullName(event.target.value)} />

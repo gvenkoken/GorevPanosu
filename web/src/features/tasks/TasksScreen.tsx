@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import { createAdminApi } from '../../api/admin'
 import type { Person, Task } from '../../api/admin'
@@ -81,7 +82,7 @@ export function TasksScreen({ api = defaultApi, now = systemTime }: Props) {
   return <section className="tasks-screen" aria-label="Görevler ekranı">
     <div className="tasks-toolbar">
       <h2>Görevler</h2>
-      <a className="button button--primary" href="#/tasks/new">Yeni görev</a>
+      <Link className="button button--primary" to="/tasks/new">Yeni görev</Link>
       <button ref={refreshButton} className="button button--secondary" disabled={loading || busy || !!deleting} onClick={() => void load()}>Yenile</button>
       <span>Son yenileme: {updatedAt ? <time dateTime={updatedAt.toISOString()}>{updatedAt.toLocaleString('tr-TR')}</time> : 'Henüz yenilenmedi'}</span>
     </div>
@@ -94,7 +95,7 @@ export function TasksScreen({ api = defaultApi, now = systemTime }: Props) {
           <thead><tr><th scope="col">Başlık</th><th scope="col">Atanan kişi</th><th scope="col">Son tarih</th><th scope="col">Durum</th><th scope="col">İşlemler</th></tr></thead>
           <tbody>{tasks.map(task => <tr key={task.id}>
             <th scope="row">{task.title}</th>
-            <td><span>{people.find(person => person.id === task.assigneeId)?.fullName ?? (task.assigneeId ? 'Bilinmeyen kişi' : 'Atanmamış')}</span>
+            <td><span>{people.find(person => person.id === task.assigneeId)?.fullName ?? (task.assigneeId ? 'Bilinmeyen kişi' : <StatusBadge status="unassigned" />)}</span>
               <label className="tasks-assignee">{task.title} için atama
                 <select value={task.assigneeId ?? ''} disabled={busy || !!deleting} onChange={event => { const assigneeId = event.target.value || null; void mutate(() => api.tasks.assign(task.id, assigneeId)) }}>
                   <option value="">Atanmamış</option>
@@ -106,7 +107,7 @@ export function TasksScreen({ api = defaultApi, now = systemTime }: Props) {
             <td>{task.dueDate ? <><time dateTime={task.dueDate}>{task.dueDate.slice(0, 10).split('-').reverse().join('.')}</time>{task.status === 'Open' && task.dueDate.slice(0, 10) < localDay && <strong className="tasks-overdue">Gecikmiş</strong>}</> : 'Son tarih yok'}</td>
             <td><StatusBadge status={task.status === 'Open' ? 'open' : 'completed'} /></td>
             <td><div className="tasks-actions">
-              <a href={`#/tasks/${encodeURIComponent(task.id)}/edit`}>Düzenle</a>
+              <Link to={`/tasks/${encodeURIComponent(task.id)}/edit`}>Düzenle</Link>
               <ActionButton disabled={busy || !!deleting} onClick={() => void mutate(() => task.status === 'Open' ? api.tasks.complete(task.id) : api.tasks.reopen(task.id))}>{task.status === 'Open' ? 'Tamamla' : 'Yeniden aç'}</ActionButton>
               <ActionButton variant="danger" disabled={busy || !!deleting} onClick={event => { deleteTrigger.current = event.currentTarget; setDeleting(task) }}>Sil</ActionButton>
             </div></td>
