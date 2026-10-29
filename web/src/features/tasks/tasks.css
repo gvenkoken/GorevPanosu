@@ -1,0 +1,14 @@
+.tasks-screen { min-width: 0; }
+.tasks-toolbar, .tasks-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.tasks-toolbar { margin-bottom: var(--space-4); }
+.tasks-toolbar h2 { margin: 0; }
+.tasks-toolbar a { text-decoration: none; }
+.tasks-table-scroll { max-width: 100%; overflow-x: auto; padding: var(--space-2); }
+.tasks-table { border-collapse: collapse; width: 100%; min-width: 52rem; }
+.tasks-table th, .tasks-table td { padding: var(--space-3); text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); }
+.tasks-assignee { display: grid; gap: var(--space-2); font-size: .875rem; margin-top: var(--space-2); }
+.tasks-assignee select { font: inherit; padding: var(--space-2); color: inherit; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.tasks-overdue { display: block; color: var(--danger); }
+.tasks-delete { border: 2px solid var(--danger); border-radius: var(--radius); padding: var(--space-4); margin-top: var(--space-4); }
+.tasks-delete button { margin-right: var(--space-2); }
+.tasks-screen :focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
