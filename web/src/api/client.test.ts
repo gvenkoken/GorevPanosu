@@ -70,8 +70,9 @@ it.each(['complete', 'reopen'] as const)('calls the task %s action', async actio
 it.each(['p1', null])('assigns or unassigns a task (%s)', async assigneeId => {
   const request = vi.fn(async (_path: RequestInfo | URL, _init?: RequestInit) => new Response('{}'))
   await createAdminApi(request).tasks.assign('t/1', assigneeId)
+  expect(request).toHaveBeenCalledTimes(1)
   expect(request.mock.calls[0][0]).toBe('/api/admin/tasks/t%2F1/assign')
-  expect(request.mock.calls[0][1]?.method).toBe('POST')
+  expect(request.mock.calls[0][1]?.method).toBe('PUT')
   expect(JSON.parse(request.mock.calls[0][1]?.body as string)).toEqual({ assigneeId })
 })
 
